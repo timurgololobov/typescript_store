@@ -1,8 +1,21 @@
-import { renderBlock } from './lib.js'
+import { renderBlock } from "./lib.js";
 
-export function renderSearchFormBlock () {
+export function renderSearchFormBlock() {
+  const date: Date = new Date();
+  const maxDate: Date = new Date(date.getFullYear(), date.getMonth() + 2, 0);
+  const minDate: Date = new Date();
+  const checkin: Date = new Date(
+    date.getFullYear(),
+    date.getMonth(),
+    date.getDate() + 2
+  );
+  const checkout: Date = new Date(
+    date.getFullYear(),
+    date.getMonth(),
+    date.getDate() + 4
+  );
   renderBlock(
-    'search-form-block',
+    "search-form-block",
     `
     <form>
       <fieldset class="search-filedset">
@@ -20,11 +33,19 @@ export function renderSearchFormBlock () {
         <div class="row">
           <div>
             <label for="check-in-date">Дата заезда</label>
-            <input id="check-in-date" type="date" value="2021-05-11" min="2021-05-11" max="2021-06-30" name="checkin" />
+            <input id="check-in-date" type="date" 
+            value= ${checkin.toISOString().split("T")[0]} 
+            min= ${minDate.toISOString().split("T")[0]}
+            max= ${maxDate.toISOString().split("T")[0]}
+            name="checkin" />
           </div>
           <div>
             <label for="check-out-date">Дата выезда</label>
-            <input id="check-out-date" type="date" value="2021-05-13" min="2021-05-11" max="2021-06-30" name="checkout" />
+            <input id="check-out-date" type="date" 
+            value=${checkout.toISOString().split("T")[0]} 
+            min= ${minDate.toISOString().split("T")[0]}
+            max= ${maxDate.toISOString().split("T")[0]}
+            name="checkout" />
           </div>
           <div>
             <label for="max-price">Макс. цена суток</label>
@@ -37,5 +58,5 @@ export function renderSearchFormBlock () {
       </fieldset>
     </form>
     `
-  )
+  );
 }
