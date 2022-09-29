@@ -5,9 +5,9 @@ export function renderUserBlock(
   linktoAvatar: string,
   favoriteItemsAmount: number
 ) {
-  const favoritesCaption: string =
-    favoriteItemsAmount < 1 ? "ничего нет" : String(favoriteItemsAmount);
-  const hasFavoriteItems = favoriteItemsAmount ? true : false;
+  const favoritesCaption: string = favoriteItemsAmount
+    ? String(favoriteItemsAmount)
+    : "ничего нет";
 
   renderBlock(
     "user-block",
@@ -18,7 +18,7 @@ export function renderUserBlock(
           <p class="name">${userName}</p>
           <p class="fav">
             <i class="heart-icon
-            ${hasFavoriteItems ? " active" : ""}"></i>
+            ${!favoritesCaption ? " active" : ""}"></i>
             ${favoritesCaption}
           </p>
       </div>
