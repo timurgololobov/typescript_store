@@ -1,9 +1,10 @@
 import { renderBlock } from "./lib.js";
+import { ISearchFormData, IPlace } from "./interfaces";
 
 export function renderSearchFormBlock() {
   const date: Date = new Date();
-  const maxDate: Date = new Date(date.getFullYear(), date.getMonth() + 2, 0);
-  const minDate: Date = new Date();
+  const maxDateT: Date = new Date(date.getFullYear(), date.getMonth() + 2, 0);
+  const minDateT: Date = new Date();
   const checkin: Date = new Date(
     date.getFullYear(),
     date.getMonth(),
@@ -14,6 +15,11 @@ export function renderSearchFormBlock() {
     date.getMonth(),
     date.getDate() + 4
   );
+  const checkInDate = checkin.toISOString().split("T")[0];
+  const checkOutDate = checkout.toISOString().split("T")[0];
+  const minDate = minDateT.toISOString().split("T")[0];
+  const maxDate = maxDateT.toISOString().split("T")[0];
+
   renderBlock(
     "search-form-block",
     `
@@ -34,17 +40,17 @@ export function renderSearchFormBlock() {
           <div>
             <label for="check-in-date">Дата заезда</label>
             <input id="check-in-date" type="date" 
-            value= ${checkin.toISOString().split("T")[0]} 
-            min= ${minDate.toISOString().split("T")[0]}
-            max= ${maxDate.toISOString().split("T")[0]}
+            value= ${checkInDate} 
+            min= ${minDate}
+            max= ${maxDate}
             name="checkin" />
           </div>
           <div>
             <label for="check-out-date">Дата выезда</label>
             <input id="check-out-date" type="date" 
-            value=${checkout.toISOString().split("T")[0]} 
-            min= ${minDate.toISOString().split("T")[0]}
-            max= ${maxDate.toISOString().split("T")[0]}
+            value=${checkOutDate} 
+            min= ${minDate}
+            max= ${maxDate}
             name="checkout" />
           </div>
           <div>
@@ -59,4 +65,49 @@ export function renderSearchFormBlock() {
     </form>
     `
   );
+  const frmSearch = document.getElementById("frmSearch");
+  frmSearch.addEventListener("submit", (event) => {
+    event.preventDefault();
+    const inpCity = frmSearch.querySelector("#city") as HTMLInputElement;
+    const inpCheckInDate = frmSearch.querySelector(
+      "#check-in-date"
+    ) as HTMLInputElement;
+    const inpCheckOutDate = frmSearch.querySelector(
+      "#check-out-date"
+    ) as HTMLInputElement;
+    const inpMaxPrice = frmSearch.querySelector(
+      "#max-price"
+    ) as HTMLInputElement;
+
+    const searchFormData: ISearchFormData = {
+      city: inpCity.value,
+      checkInDate: new Date(inpCheckInDate.value),
+      chekOutDate: new Date(inpCheckOutDate.value),
+      maxPrice: inpMaxPrice.value === "" ? null : +inpMaxPrice.value,
+    };
+    search(searchFormData, searchCallback);
+  });
+}
+
+interface ISearchCallBack {
+  (DataI): void;
+}
+type DataI = {
+  data: IPlace | null;
+  error: Error | null;
+};
+const searchCallback: ISearchCallBack = (data: DataI) => {
+  if (data.error) {
+    console.error(data.error);
+  }
+  console.log("searchCallback", data.data);
+};
+export function search(data: ISearchFormData, searchCallback: ISearchCallBack) {
+  console.log("funntion search searchFormData =", data);
+  const a = Boolean(Math.random() < 0.5);
+  if (a) searchCallback({ error: new Error("error"), data: [] });
+  else {
+    const places: IPlace[] = [];
+    searchCallback({ error: null, data: [] });
+  }
 }
