@@ -1,6 +1,6 @@
 import { renderBlock } from "./lib.js";
-import { IUser } from "./interfaces";
-import { APIlocal } from "./api";
+import { IUser } from "./interfaces.js";
+import { APIlocal } from "./api.js";
 
 export function renderUserBlock(
   userName: string,

@@ -24,6 +24,24 @@ export function renderEmptyOrErrorSearchBlock(reasonMessage) {
   );
 }
 
+const toggleFavoriteItem = (event) => {
+  const id: string = event.target.dataset.id;
+  const favoritesItem: string[] = getFavoritesList();
+  const isFindItem = favoritesItem.find((itemId) => itemId === id);
+  if (isFindItem) {
+    const newFavoritesItems = favoritesItem.filter((itemId) => itemId !== id);
+    localStorage.setItem("favoriteItem", newFavoritesItems.join());
+  } else {
+    localStorage.setItem("favoriteItem", [...favoritesItem, id].join());
+  }
+};
+
+const getFavoritesList = () => {
+  return localStorage.getItem("favoriteItem").split(",");
+};
+const favoriteButton = document.querySelector(".icon-filter");
+favoriteButton.addEventListener("click", toggleFavoriteItem);
+
 export function renderSearchResultsBlock() {
   renderBlock(
     "search-results-block",
