@@ -49,6 +49,9 @@ export function getFavoritesAmount(): number {
 }
 //тесты
 export function setLocalStorage(): void {
-  APIlocal.set("user", "{'userName': 'Petr', avatarUrl: 'cat.png' }");
+  APIlocal.set(
+    "user",
+    "{'userName': 'Wade Warren', avatarUrl: '/img/avatar.png' }"
+  );
   APIlocal.set("favoritesAmount", "5");
 }

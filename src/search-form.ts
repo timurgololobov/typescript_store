@@ -1,5 +1,13 @@
 import { renderBlock } from "./lib.js";
 import { ISearchFormData, IPlace } from "./interfaces";
+import { searchPlace } from "./api.js";
+import {
+  renderSearchResultsBlock,
+  toggleFavoriteItem,
+} from "./search-results.js";
+import { FlatRentSdk } from "./geekbrains-flat-rent-sdk.js";
+
+const sdk = new FlatRentSdk();
 
 export function renderSearchFormBlock() {
   const date: Date = new Date();
@@ -110,4 +118,51 @@ export function search(data: ISearchFormData, searchCallback: ISearchCallBack) {
     const places: IPlace[] = [];
     searchCallback({ error: null, data: [] });
   }
+}
+
+export function findData(data: ISearchFormData): void {
+  new Promise(function (resolve, reject) {
+    if (data["flatRent"]) {
+      resolve(
+        new Promise((resolve, reject) => {
+          // (*)
+          sdk
+            .search({
+              city: "Санкт-Петербург",
+              checkInDate: new Date(data["checkInDate"]),
+              checkOutDate: new Date(data["chekOutDate"]),
+              priceLimit: data["maxPrice"],
+            })
+            .then((flatResult: object | null) => {
+              resolve(flatResult);
+            });
+        })
+      );
+    }
+    resolve({});
+  })
+    .then((flatResult: {}) => {
+      if (data["homy"]) {
+        return new Promise((resolve, reject) => {
+          searchPlace(
+            new Date(data["startDate"]),
+            new Date(data["endDate"]),
+            data["maxPrice"]
+          ).then((homyResults: object | null) => {
+            if (Object.keys(flatResult).length != 0) {
+              resolve({ flatResult, homyResults });
+            }
+            resolve({ homyResults });
+          });
+        });
+      }
+      if (Object.keys(flatResult).length != 0) {
+        return { flatResult };
+      }
+      return {};
+    })
+    .then((allResult: {}) => {
+      renderSearchResultsBlock(allResult);
+      toggleFavoriteItem;
+    });
 }

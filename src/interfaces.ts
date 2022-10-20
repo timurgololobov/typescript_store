@@ -7,6 +7,22 @@ export interface ISearchFormData {
   checkInDate: Date;
   chekOutDate: Date;
   maxPrice: number | null;
+  flatRent?: boolean;
+  homy?: boolean;
 }
 
-export interface IPlace {}
+export interface IPlace {
+  id: number | string;
+  image: string;
+  name: string;
+  description: string;
+  remoteness: number;
+  bookedDates: number[];
+  price: number;
+
+  coordinates?: number[];
+  details?: string;
+  photos?: string[];
+  title?: string;
+  totalPrice?: number;
+}

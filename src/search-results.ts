@@ -1,3 +1,4 @@
+import { IPlace } from "./interfaces.js";
 import { renderBlock } from "./lib.js";
 
 export function renderSearchStubBlock() {
@@ -24,25 +25,74 @@ export function renderEmptyOrErrorSearchBlock(reasonMessage) {
   );
 }
 
-const toggleFavoriteItem = (event) => {
-  const id: string = event.target.dataset.id;
+export const toggleFavoriteItem = (event) => {
+  const target = event.target as HTMLElement;
+  const id: string = target.dataset.id;
   const favoritesItem: string[] = getFavoritesList();
   const isFindItem = favoritesItem.find((itemId) => itemId === id);
   if (isFindItem) {
     const newFavoritesItems = favoritesItem.filter((itemId) => itemId !== id);
     localStorage.setItem("favoriteItem", newFavoritesItems.join());
+    target.classList.remove("active");
   } else {
     localStorage.setItem("favoriteItem", [...favoritesItem, id].join());
+    target.classList.add("active");
   }
 };
 
 const getFavoritesList = () => {
   return localStorage.getItem("favoriteItem").split(",");
 };
-const favoriteButton = document.querySelector(".icon-filter");
+const favoriteButton = document.querySelector(".favorites");
 favoriteButton.addEventListener("click", toggleFavoriteItem);
 
-export function renderSearchResultsBlock() {
+export function renderSearchResultsBlock(results: object) {
+  const placeItems = [];
+
+  if (Object.keys(results).length != 0) {
+    for (const key in results) {
+      results[key].forEach((place: IPlace) => {
+        placeItems.push(
+          `
+          <li class="result">
+          <div class="result-container">
+            <div class="result-img-container">
+              <div data-id=${place.id} data-name=${
+            JSON.stringify(place.name) || JSON.stringify(place.title)
+          } data-image=${
+            place.image || place.photos[0]
+          } class="favorites js-favorite"></div>
+              <img class="result-img" src="${
+                place.image || place.photos[0]
+              }" alt="">
+            </div>	
+            <div class="result-info">
+              <div class="result-info--header">
+                <p>${place.name || place.title}</p>
+                <p class="price">${place.price || place.totalPrice}&#8381;</p>
+              </div>
+              <div class="result-info--map"><i class="map-icon"></i> ${
+                place.remoteness || ""
+              } км от вас</div>
+              <div class="result-info--descr">${
+                place.description || place.details
+              }</div>
+              <div class="result-info--footer">
+                <div>
+                  <button>Забронировать</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </li>
+        `
+        );
+      });
+    }
+  } else {
+    placeItems.push('<li class="result">Данные отсутсвуют</li>');
+  }
+
   renderBlock(
     "search-results-block",
     `
