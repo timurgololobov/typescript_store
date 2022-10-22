@@ -1,18 +1,13 @@
-export const APIlocal = {
-  get: (key: string) => localStorage.getItem(key),
-  set: (key: string, value: string) => localStorage.setItem(key, value),
-};
-
 export function dateToUnixStamp(date: Date) {
   return date.getTime() / 1000;
 }
 
-export function responseToJson(requestPromise) {
+export function responseToJson(requestPromise: any) {
   return requestPromise
-    .then((response) => {
+    .then((response: any) => {
       return response.text();
     })
-    .then((response) => {
+    .then((response: any) => {
       return JSON.parse(response);
     });
 }

@@ -1,37 +1,160 @@
+import { Place } from "./store/domain/place.js";
 import { renderBlock } from "./lib.js";
-import { ISearchFormData, IPlace } from "./interfaces";
-import { searchPlace } from "./api.js";
-import {
-  renderSearchResultsBlock,
-  toggleFavoriteItem,
-} from "./search-results.js";
-import { FlatRentSdk } from "./geekbrains-flat-rent-sdk.js";
+import { renderSearchResultsBlock } from "./search-results.js";
+import { FlatrentProvider } from "./store/providers/flatrent/flatrent-provider.js";
+import { HomyProvider } from "./store/providers/basic/basic-provider.js";
+import { toggleFavoriteItem } from "./user.js";
+import { iSortParams, iSearchFormData, IPlace } from "./interfaces.js";
 
-const sdk = new FlatRentSdk();
+const flatrentProvider = new FlatrentProvider();
+const homyProvider = new HomyProvider();
 
-export function renderSearchFormBlock() {
-  const date: Date = new Date();
-  const maxDateT: Date = new Date(date.getFullYear(), date.getMonth() + 2, 0);
-  const minDateT: Date = new Date();
-  const checkin: Date = new Date(
-    date.getFullYear(),
-    date.getMonth(),
-    date.getDate() + 2
+export function CallBack(value: string | Place): Error | [] {
+  if (Math.random() >= 0.5) {
+    throw Error("value");
+  }
+  return [];
+}
+
+export function sortPlaces(arr: Place[], sort: iSortParams) {
+  function sortBy(one: any, two: any) {
+    if (one[sort.key] > two[sort.key]) {
+      return sort.by;
+    } else if (one[sort.key] < two[sort.key]) {
+      return -sort.by;
+    } else {
+      return 0;
+    }
+  }
+  return arr.sort(sortBy);
+}
+
+interface ISearchCallBack {
+  (value: string | Place): Error | [];
+}
+
+export function search(formName: string, cb: ISearchCallBack) {
+  const form = document.getElementById(formName);
+
+  const data = {
+    startDate: (document.getElementById("check-in-date") as HTMLInputElement)
+      .value,
+    endDate: (document.getElementById("check-out-date") as HTMLInputElement)
+      .value,
+    flatRent: (document.getElementById("flat-rent") as HTMLInputElement)
+      .checked,
+    homy: (document.getElementById("homy") as HTMLInputElement).checked,
+  };
+  findData(data);
+  setTimeout(cb, 3000);
+  form?.addEventListener("submit", (e) => {
+    e.preventDefault();
+    const data = {
+      startDate: (document.getElementById("check-in-date") as HTMLInputElement)
+        .value,
+      endDate: (document.getElementById("check-out-date") as HTMLInputElement)
+        .value,
+      maxPrice: +(document.getElementById("max-price") as HTMLInputElement)
+        .value,
+      flatRent: (document.getElementById("flat-rent") as HTMLInputElement)
+        .checked,
+      homy: (document.getElementById("homy") as HTMLInputElement).checked,
+    };
+    findData(data);
+  });
+}
+
+export function findData(
+  data: iSearchFormData,
+  sortParams?: iSortParams
+): void {
+  Promise.all([
+    flatrentProvider.search({
+      city: "Санкт-Петербург",
+      checkInDate: new Date(data["startDate"]),
+      checkOutDate: new Date(data["endDate"]),
+      priceLimit: data["maxPrice"],
+    }),
+    homyProvider.search({
+      city: [59.9386, 30.3141],
+      checkInDate: new Date(data["startDate"]),
+      checkOutDate: new Date(data["endDate"]),
+      priceLimit: data["maxPrice"],
+    }),
+  ]).then((results) => {
+    let allResults: Place[] = [];
+    if (data["flatRent"] && data["homy"]) {
+      allResults = ([] as Place[]).concat(results[0], results[1]);
+    } else {
+      if (data["flatRent"]) {
+        allResults = ([] as Place[]).concat(results[0]);
+      }
+      if (data["homy"]) {
+        allResults = ([] as Place[]).concat(results[1]);
+      }
+    }
+
+    sortPlaces(
+      allResults,
+      sortParams || { key: "price", by: 1, value: "Сначала дешёвые" }
+    );
+    renderSearchResultsBlock(
+      allResults,
+      sortParams?.value || "Сначала дешёвые"
+    );
+    toggleFavoriteItem();
+
+    const sort = document.getElementById("sort") as HTMLInputElement;
+    sort.addEventListener("change", (e) => {
+      e.preventDefault();
+      const target = e.target as HTMLInputElement;
+      switch (target.value) {
+        case "Сначала дорогие":
+          findData(data, { key: "price", by: -1, value: target.value });
+          break;
+        case "Сначала дешёвые":
+          findData(data, { key: "price", by: 1, value: target.value });
+          break;
+        case "Сначала ближе":
+          findData(data, { key: "remoteness", by: 1, value: target.value });
+          break;
+      }
+    });
+  });
+}
+
+export function renderSearchFormBlock(data: iSearchFormData) {
+  const currentDate = new Date();
+  const minDate = `${currentDate.getFullYear()}-${(
+    "0" +
+    (currentDate.getMonth() + 1)
+  ).slice(-2)}-${currentDate.getDate()}`;
+  const maxDateFull = new Date(
+    currentDate.getFullYear(),
+    currentDate.getMonth() + 2,
+    0
   );
-  const checkout: Date = new Date(
-    date.getFullYear(),
-    date.getMonth(),
-    date.getDate() + 4
-  );
-  const checkInDate = checkin.toISOString().split("T")[0];
-  const checkOutDate = checkout.toISOString().split("T")[0];
-  const minDate = minDateT.toISOString().split("T")[0];
-  const maxDate = maxDateT.toISOString().split("T")[0];
+  const maxDate = `${maxDateFull.getFullYear()}-${(
+    "0" +
+    (maxDateFull.getMonth() + 1)
+  ).slice(-2)}-${maxDateFull.getDate()}`;
+  if (!data.startDate) {
+    data.startDate = `${new Date(currentDate).getFullYear()}-${(
+      "0" +
+      (currentDate.getMonth() + 1)
+    ).slice(-2)}-${("0" + (new Date(currentDate).getDate() + 1)).slice(-2)}`;
+  }
+  if (!data.endDate) {
+    data.endDate = `${new Date(currentDate).getFullYear()}-${(
+      "0" +
+      (currentDate.getMonth() + 1)
+    ).slice(-2)}-${("0" + (new Date(currentDate).getDate() + 2)).slice(-2)}`;
+  }
 
   renderBlock(
     "search-form-block",
     `
-    <form>
+    <form id="search">
       <fieldset class="search-filedset">
         <div class="row">
           <div>
@@ -39,31 +162,23 @@ export function renderSearchFormBlock() {
             <input id="city" type="text" disabled value="Санкт-Петербург" />
             <input type="hidden" disabled value="59.9386,30.3141" />
           </div>
-          <!--<div class="providers">
-            <label><input type="checkbox" name="provider" value="homy" checked /> Homy</label>
-            <label><input type="checkbox" name="provider" value="flat-rent" checked /> FlatRent</label>
-          </div>--!>
+          <div class="providers">
+            <label><input type="checkbox" name="provider" value="homy" id="homy" checked /> Homy</label>
+            <label><input type="checkbox" name="provider" value="flat-rent" id="flat-rent" checked /> FlatRent</label>
+          </div>
         </div>
         <div class="row">
           <div>
             <label for="check-in-date">Дата заезда</label>
-            <input id="check-in-date" type="date" 
-            value= ${checkInDate} 
-            min= ${minDate}
-            max= ${maxDate}
-            name="checkin" />
+            <input id="check-in-date" type="date" value="${data.startDate}" min="${minDate}" max="${maxDate}" name="checkin" />
           </div>
           <div>
             <label for="check-out-date">Дата выезда</label>
-            <input id="check-out-date" type="date" 
-            value=${checkOutDate} 
-            min= ${minDate}
-            max= ${maxDate}
-            name="checkout" />
+            <input id="check-out-date" type="date" value="${data.endDate}" min="${data.startDate}" max="${maxDate}" name="checkout" />
           </div>
           <div>
             <label for="max-price">Макс. цена суток</label>
-            <input id="max-price" type="text" value="" name="price" class="max-price" />
+            <input id="max-price" type="number" value="" name="price" class="max-price" />
           </div>
           <div>
             <div><button>Найти</button></div>
@@ -73,96 +188,4 @@ export function renderSearchFormBlock() {
     </form>
     `
   );
-  const frmSearch = document.getElementById("frmSearch");
-  frmSearch.addEventListener("submit", (event) => {
-    event.preventDefault();
-    const inpCity = frmSearch.querySelector("#city") as HTMLInputElement;
-    const inpCheckInDate = frmSearch.querySelector(
-      "#check-in-date"
-    ) as HTMLInputElement;
-    const inpCheckOutDate = frmSearch.querySelector(
-      "#check-out-date"
-    ) as HTMLInputElement;
-    const inpMaxPrice = frmSearch.querySelector(
-      "#max-price"
-    ) as HTMLInputElement;
-
-    const searchFormData: ISearchFormData = {
-      city: inpCity.value,
-      checkInDate: new Date(inpCheckInDate.value),
-      chekOutDate: new Date(inpCheckOutDate.value),
-      maxPrice: inpMaxPrice.value === "" ? null : +inpMaxPrice.value,
-    };
-    search(searchFormData, searchCallback);
-  });
-}
-
-interface ISearchCallBack {
-  (DataI): void;
-}
-type DataI = {
-  data: IPlace | null;
-  error: Error | null;
-};
-const searchCallback: ISearchCallBack = (data: DataI) => {
-  if (data.error) {
-    console.error(data.error);
-  }
-  console.log("searchCallback", data.data);
-};
-export function search(data: ISearchFormData, searchCallback: ISearchCallBack) {
-  console.log("funntion search searchFormData =", data);
-  const a = Boolean(Math.random() < 0.5);
-  if (a) searchCallback({ error: new Error("error"), data: [] });
-  else {
-    const places: IPlace[] = [];
-    searchCallback({ error: null, data: [] });
-  }
-}
-
-export function findData(data: ISearchFormData): void {
-  new Promise(function (resolve, reject) {
-    if (data["flatRent"]) {
-      resolve(
-        new Promise((resolve, reject) => {
-          // (*)
-          sdk
-            .search({
-              city: "Санкт-Петербург",
-              checkInDate: new Date(data["checkInDate"]),
-              checkOutDate: new Date(data["chekOutDate"]),
-              priceLimit: data["maxPrice"],
-            })
-            .then((flatResult: object | null) => {
-              resolve(flatResult);
-            });
-        })
-      );
-    }
-    resolve({});
-  })
-    .then((flatResult: {}) => {
-      if (data["homy"]) {
-        return new Promise((resolve, reject) => {
-          searchPlace(
-            new Date(data["startDate"]),
-            new Date(data["endDate"]),
-            data["maxPrice"]
-          ).then((homyResults: object | null) => {
-            if (Object.keys(flatResult).length != 0) {
-              resolve({ flatResult, homyResults });
-            }
-            resolve({ homyResults });
-          });
-        });
-      }
-      if (Object.keys(flatResult).length != 0) {
-        return { flatResult };
-      }
-      return {};
-    })
-    .then((allResult: {}) => {
-      renderSearchResultsBlock(allResult);
-      toggleFavoriteItem;
-    });
 }
